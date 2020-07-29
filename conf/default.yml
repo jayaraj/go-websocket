@@ -1,0 +1,11 @@
+# Application
+application: "websockets"
+
+# Service port
+http: 9000
+
+# Options : dev, prod
+mode: "dev"
+
+# Max messages
+maxmsg: 10

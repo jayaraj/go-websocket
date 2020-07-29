@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Calculator</title>
+<script src="https://unpkg.com/complex-js@5.0.0/dst/complex.min.js"></script>
+<script type="text/javascript">
+
+
+window.onload = function () {
+    var conn;
+    var msg = document.getElementById("msg");
+    var log = document.getElementById("log");
+    var error = document.getElementById("error");
+
+    function isMathExpression (str) {
+        try {
+            Complex.compile(str);
+        } catch (error) {
+                showError("<b>Not a valid Expression</b>");
+            return false;
+        }
+        showError("");
+        return true;
+    }
+
+    function appendLog(item) {
+        var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+        log.insertBefore(item, log.childNodes[0]);
+        if (log.childElementCount >= 10) {
+            log.removeChild(log.childNodes[10])
+        }
+        if (doScroll) {
+            log.scrollTop = log.scrollHeight - log.clientHeight;
+        }
+    }
+
+    function showError(str) {
+        error.innerHTML = str;
+    }
+
+    document.getElementById("form").onsubmit = function () {
+        if (!conn) {
+            return false;
+        }
+        if (!msg.value) {
+            return false;
+        }
+        if (!isMathExpression(msg.value)) {
+            return false
+        }
+        conn.send(msg.value);
+        msg.value = "";
+        return false;
+    };
+
+    if (window["WebSocket"]) {
+        conn = new WebSocket("ws://" + document.location.host + "/ws");
+        conn.onclose = function (evt) {
+            showError("<b>Connection closed.</b>");
+        };
+        conn.onmessage = function (evt) {
+            var messages = evt.data.split('\n');
+            for (var i = 0; i < messages.length; i++) {
+                if (messages[i] != "") {
+                    try {
+                        var obj = JSON.parse(messages[i]);
+                        var item = document.createElement("div");
+                        if (obj.error) {
+                            showError(obj.msg);
+                        } else {
+                            item.innerText = obj.msg;
+                        }
+                        appendLog(item);
+                    } catch (error) {
+                    }
+                }
+            }
+        };
+    } else {
+        showError("<b>Your browser does not support WebSockets.</b>");
+    }
+};
+</script>
+<style type="text/css">
+html {
+    overflow: hidden;
+}
+
+body {
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: gray;
+}
+
+#error {
+    margin: 0;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    position: absolute;
+    top: 2em;
+    left: 0.5em;
+    bottom: 1em;
+    overflow: auto;
+}
+
+#log {
+    background: white;
+    margin: 0;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    position: absolute;
+    top: 4em;
+    left: 0.5em;
+    right: 0.5em;
+    bottom: 1em;
+    overflow: auto;
+}
+
+#form {
+    padding: 0 0.5em 0 0.5em;
+    margin: 0;
+    position: absolute;
+    top: 0.5em;
+    left: 0px;
+    width: 100%;
+    overflow: hidden;
+}
+
+</style>
+</head>
+<body>
+<form id="form">
+    <input type="text" id="msg" size="64" autofocus />
+    <input type="submit" value="Calculate" />
+</form>
+<div id="error"></div>
+<div id="log"></div>
+</body>
+</html>
